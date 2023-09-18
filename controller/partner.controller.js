@@ -1,5 +1,5 @@
 const Joi = require("joi");
-const { Partners } = require("../model/partner.model");
+const { Partner } = require("../model/partner.model");
 
 exports.postPartner = async (req, res) => {
   try {
@@ -36,24 +36,25 @@ exports.postPartner = async (req, res) => {
       });
     }
 
-    const existingStudent = await Partners.findOne({
-      where: {
-        email: req.body.email,
-      },
-    });
-    if (existingStudent) {
-      console.log(
-        "Blocking registration: Application with email:",
-        req.body.email,
-        "already exists."
-      );
-      return res.status(400).json({
-        success: false,
-        message: "An application with this email has already applied.",
-      });
-    }
+    exports.getApplications = async (req, res) => {
+      try {
+        const applications = await Partner.findAll({
+          where: {
+            approved: false,
+            status_of_application: "pending",
+          },
+        });
+    
+        // Send the fetched data as a response
+        res.status(200).json(applications);
+      } catch (error) {
+        // Handle any errors that occur during the database query
+        console.error('Error fetching applications:', error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    };
 
-    const application = new Partners(studentData);
+    const application = new Partner(studentData);
     await application.save();
 
     // Send a successful response back to the client
@@ -71,13 +72,14 @@ exports.postPartner = async (req, res) => {
 // get applications
 exports.getApplications = async (req, res) => {
   try {
-    const applications = await Partners.findAll({
+    const application =  await Partner.findAll({
       where: {
         approved: false,
         status_of_application: "pending",
       },
-    });
-    return res.status(200).json(applications);
+      
+    })
+    return res.status(200).json(application);
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -91,7 +93,7 @@ exports.getApplications = async (req, res) => {
 exports.rejectApplication = async (req, res) => {
   const { id } = req.params;
   try {
-    const application = await Partners.findOne({
+    const application = await Partner.findOne({
       where: {
         id,
       },
@@ -123,7 +125,7 @@ exports.updatePaymentStatusAndApproved = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const application = await Partners.findOne({
+    const application = await Partner.findOne({
       where: {
         id: id,
       },
